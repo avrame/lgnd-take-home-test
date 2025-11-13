@@ -18,7 +18,8 @@ export default function Map() {
           bounds={sanFranciscoBounds}
           color="blue"
           weight={2}
-          opacity={0.25}
+          opacity={0.5}
+          fillOpacity={0.1}
         />
       </MapContainer>
     </div>
