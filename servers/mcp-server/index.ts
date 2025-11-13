@@ -3,7 +3,14 @@ import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/
 import express from 'express';
 import { z } from 'zod';
 import queryOverpass from './utils/overpass';
-import { findSimilarEmbeddings, getBoundingBox } from './utils/duckdb';
+import { EmbeddingResult, findSimilarEmbeddings, getBoundingBox } from './utils/duckdb';
+
+interface FeatureWithEmbeddings {
+  name: string;
+  lon: number;
+  lat: number;
+  similarEmbeddings: EmbeddingResult[];
+}
 
 // San Francisco bounding box [south, west, north, east]
 // Fallback bounding box - expanded to cover greater SF area including bay
@@ -49,7 +56,24 @@ server.registerTool(
   {
       title: 'Search San Francisco Map Tool',
       description: `Search OpenStreetMap data in the San Francisco area for geographic features and find similar imagery chip embeddings from the DuckDB database.
-This tool searches for features by name and/or OSM tags. Use OSM tags for more reliable results when searching for specific feature types.`,
+This tool searches for features by name and/or OSM tags. Use OSM tags for more reliable results when searching for specific feature types.
+
+SUPPORTED OSM TAGS (examples):
+- Marinas: { "leisure": "marina" } or { "amenity": "marina" }
+- Airports/Airfields: { "aeroway": "aerodrome" } or { "aeroway": "airport" }
+- Parking lots: { "amenity": "parking" } or { "parking": "*" } (wildcard)
+- Other common tags:
+  - { "amenity": "restaurant" } - restaurants
+  - { "amenity": "school" } - schools
+  - { "leisure": "park" } - parks
+  - { "highway": "residential" } - residential roads
+  - { "landuse": "residential" } - residential areas
+  - { "natural": "water" } - water bodies
+  - { "waterway": "river" } - rivers
+
+You can combine name and tags for more specific searches. The tool searches nodes, ways, and relations to find both point locations and area features.
+
+Returns OSM elements with their coordinates and similar imagery chip embeddings from the DuckDB database. For each OSM feature, the tool finds similar imagery chips using cosine similarity search, which helps discover imagery that visually matches the feature type (e.g., finding imagery that looks like marinas, parking lots, etc.). Each embedding represents a 160x160 meter area and includes a chips_id that can be used to fetch thumbnail images.`,
       inputSchema: {
         name: z.string().optional().describe('Search by place name (case-insensitive regex match)'),
         tags: z.record(
@@ -59,7 +83,19 @@ This tool searches for features by name and/or OSM tags. Use OSM tags for more r
           'Search by OSM tags as key-value pairs, e.g., { "leisure": "marina" } or { "amenity": "parking" }. Use "*" as value for wildcard matches.'
         ),
       },
-        outputSchema: {}
+        outputSchema: {
+          features: z.array(z.object({
+            name: z.string(),
+            lon: z.number(),
+            lat: z.number(),
+            similarEmbeddings: z.array(z.object({
+              chips_id: z.string().describe('Unique identifier for the imagery chip (used to fetch thumbnails from S3)'),
+              similarity: z.number().describe('Cosine similarity score (0-1, higher is more similar)'),
+              geom_wkt: z.string().describe('Geometry in Well-Known Text format'),
+              datetime: z.string().describe('Timestamp when the imagery was captured'),
+            })).max(5).describe('The top 5 most similar embeddings from the DuckDB database')
+          })).describe('The features found in the San Francisco area')
+        }
     },
     async ({ name, tags }) => {
       try {
@@ -73,15 +109,21 @@ This tool searches for features by name and/or OSM tags. Use OSM tags for more r
           bbox,
         });
 
-        // console.log('Overpass features:', features);
+        const featuresWithEmbeddings: FeatureWithEmbeddings[] = [];
 
         for (const feature of features) {
           const embeddings = await findSimilarEmbeddings(feature.lon, feature.lat);
-          console.log('Feature:', feature);
-          console.log('Embeddings:', embeddings);
+          featuresWithEmbeddings.push({
+            name: feature?.tags?.name || '',
+            lon: feature?.lon || 0,
+            lat: feature?.lat || 0,
+            similarEmbeddings: embeddings
+          });
         }
 
-        const output = {}
+        const output = {
+          features: featuresWithEmbeddings
+        }
         
         return {
           content: [{ type: 'text', text: JSON.stringify(output) }],
