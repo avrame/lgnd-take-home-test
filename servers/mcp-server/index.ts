@@ -2,47 +2,61 @@ import { McpServer, ResourceTemplate } from '@modelcontextprotocol/sdk/server/mc
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import express from 'express';
 import { z } from 'zod';
+import queryOverpass from './utils/overpass';
+
+// San Francisco bounding box [south, west, north, east]
+// Expanded to cover greater SF area including bay
+const SF_BBOX: [number, number, number, number] = [37.6, -122.6, 37.9, -122.3];
 
 // Create an MCP server
 const server = new McpServer({
-    name: 'demo-server',
+    name: 'mcp-server',
     version: '1.0.0'
 });
 
-// Add an addition tool
+// Add map search tool
 server.registerTool(
-    'add',
-    {
-        title: 'Addition Tool',
-        description: 'Add two numbers',
-        inputSchema: { a: z.number(), b: z.number() },
-        outputSchema: { result: z.number() }
+  'search_san_francisco_map',
+  {
+      title: 'Search San Francisco Map Tool',
+      description: `Search OpenStreetMap data in the San Francisco area for geographic features and find similar imagery chip embeddings from the DuckDB database.
+This tool searches for features by name and/or OSM tags. Use OSM tags for more reliable results when searching for specific feature types.`,
+      inputSchema: {
+        name: z.string().optional().describe('Search by place name (case-insensitive regex match)'),
+        tags: z.record(
+          z.string(),
+          z.string()
+        ).optional().describe(
+          'Search by OSM tags as key-value pairs, e.g., { "leisure": "marina" } or { "amenity": "parking" }. Use "*" as value for wildcard matches.'
+        ),
+      },
+        outputSchema: {}
     },
-    async ({ a, b }) => {
-        const output = { result: a + b };
-        return {
-            content: [{ type: 'text', text: JSON.stringify(output) }],
-            structuredContent: output
-        };
-    }
-);
+    async ({ name, tags }) => {
+      try {
+        // Query Overpass API for OSM features
+        const features = await queryOverpass({
+          name,
+          tags,
+          bbox: SF_BBOX,
+        });
 
-// Add a dynamic greeting resource
-server.registerResource(
-    'greeting',
-    new ResourceTemplate('greeting://{name}', { list: undefined }),
-    {
-        title: 'Greeting Resource', // Display name for UI
-        description: 'Dynamic greeting generator'
-    },
-    async (uri, { name }) => ({
-        contents: [
-            {
-                uri: uri.href,
-                text: `Hello, ${name}!`
-            }
-        ]
-    })
+        console.log('Overpass features:', features);
+
+        const output = {}
+        
+        return {
+          content: [{ type: 'text', text: JSON.stringify(output) }],
+          structuredContent: output
+        };
+      } catch (error) {
+        console.error('Error querying Overpass API:', error);
+        return {
+          content: [{ type: 'text', text: 'Error querying Overpass API' }],
+          structuredContent: { error: 'Error querying Overpass API' }
+        };
+      }
+    }
 );
 
 // Set up Express and HTTP transport
