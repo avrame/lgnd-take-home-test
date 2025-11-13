@@ -3,10 +3,39 @@ import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/
 import express from 'express';
 import { z } from 'zod';
 import queryOverpass from './utils/overpass';
+import { findSimilarEmbeddings, getBoundingBox } from './utils/duckdb';
 
 // San Francisco bounding box [south, west, north, east]
-// Expanded to cover greater SF area including bay
-const SF_BBOX: [number, number, number, number] = [37.6, -122.6, 37.9, -122.3];
+// Fallback bounding box - expanded to cover greater SF area including bay
+const SF_BBOX_FALLBACK: [number, number, number, number] = [
+  37.7,   // south
+  -122.6, // west
+  37.85,  // north
+  -122.3  // east
+]
+
+// Cache for dynamically loaded bounding box
+let cachedBbox: [number, number, number, number] | null = null;
+
+/**
+ * Get the San Francisco bounding box, either from DuckDB or fallback to hardcoded value
+ * Results are cached after first successful query
+ */
+async function getSFBoundingBox(): Promise<[number, number, number, number]> {
+    if (cachedBbox) {
+        return cachedBbox;
+    }
+
+    const bbox = await getBoundingBox();
+    if (bbox) {
+        cachedBbox = bbox;
+        console.log('Using bounding box from DuckDB:', bbox);
+        return bbox;
+    }
+
+    console.log('Using fallback bounding box:', SF_BBOX_FALLBACK);
+    return SF_BBOX_FALLBACK;
+}
 
 // Create an MCP server
 const server = new McpServer({
@@ -34,14 +63,23 @@ This tool searches for features by name and/or OSM tags. Use OSM tags for more r
     },
     async ({ name, tags }) => {
       try {
+        // Get bounding box from DuckDB (or fallback)
+        const bbox = await getSFBoundingBox();
+        
         // Query Overpass API for OSM features
         const features = await queryOverpass({
           name,
           tags,
-          bbox: SF_BBOX,
+          bbox,
         });
 
-        console.log('Overpass features:', features);
+        // console.log('Overpass features:', features);
+
+        for (const feature of features) {
+          const embeddings = await findSimilarEmbeddings(feature.lon, feature.lat);
+          console.log('Feature:', feature);
+          console.log('Embeddings:', embeddings);
+        }
 
         const output = {}
         

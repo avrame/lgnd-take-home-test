@@ -11,16 +11,20 @@
     "start:mcp": "tsx watch servers/mcp-server/index.ts"
   },
   "dependencies": {
+    "@duckdb/node-api": "^1.4.2-r.1",
     "@modelcontextprotocol/sdk": "^1.21.1",
     "axios": "^1.13.2",
     "express": "^5.1.0",
+    "leaflet": "^1.9.4",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
+    "react-leaflet": "^5.0.0-rc.2",
     "tsx": "^4.20.6",
     "zod": "^3.25.76"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.1",
+    "@types/leaflet": "^1.9.21",
     "@types/node": "^24.10.0",
     "@types/react": "^19.2.2",
     "@types/react-dom": "^19.2.2",

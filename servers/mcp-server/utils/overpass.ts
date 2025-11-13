@@ -111,6 +111,11 @@ out center;`;
         console.log('Overpass API response status:', response.status);
         console.log('Overpass API response elements count:', response.data?.elements?.length || 0);
         
+        // Log first element structure for debugging
+        if (response.data?.elements?.length > 0) {
+            console.log('Sample element structure:', JSON.stringify(response.data.elements[0], null, 2));
+        }
+        
         // If no results and we have a bbox, log a warning
         if (response.data?.elements?.length === 0 && bbox) {
             console.warn('No results found. This could mean:');
@@ -118,9 +123,29 @@ out center;`;
             console.warn('2. The bounding box might be incorrect');
             console.warn('3. The query syntax might need adjustment');
             console.warn('Bounding box used:', bbox);
+            console.warn('Query options:', { name, tags, bbox });
         }
         
-        return response.data.elements.slice(0, limit);
+        // Normalize coordinates: nodes have lat/lon directly, ways/relations have center object
+        const elements = response.data.elements.slice(0, limit).map((element: any) => {
+            if (element.type === 'node') {
+                return {
+                    ...element,
+                    lat: element.lat,
+                    lon: element.lon
+                };
+            } else if (element.center) {
+                // Ways and relations with out center; have center object
+                return {
+                    ...element,
+                    lat: element.center.lat,
+                    lon: element.center.lon
+                };
+            }
+            return element;
+        });
+        
+        return elements;
     } catch (error) {
         if (axios.isAxiosError(error)) {
             console.error('Overpass API error details:');
