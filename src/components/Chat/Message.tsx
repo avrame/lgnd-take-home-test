@@ -10,7 +10,7 @@ export default function Message({ message }: { message: MessageData }) {
   return (
     <article className={`message ${role}`}>
       <header>{role}</header>
-      <section>{content}</section>
+      <section dangerouslySetInnerHTML={{ __html: content }} />
       <footer>{date.toLocaleString()}</footer>
     </article>
   )

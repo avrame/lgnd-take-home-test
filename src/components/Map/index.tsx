@@ -1,5 +1,6 @@
 import { MapContainer, TileLayer, Rectangle } from 'react-leaflet';
 import L from 'leaflet';
+import './Map.css';
 
 const nwCorner = L.latLng(38.358605821056415, -122.97903506362721)
 const seCorner = L.latLng(37.031979877829684, -121.56504250845597)

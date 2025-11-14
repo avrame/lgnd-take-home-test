@@ -8,6 +8,7 @@
 
 main {
   display: flex;
+  flex-direction: column-reverse;
   height: 100%;
   width: 100%;
   padding: 1rem;
@@ -15,11 +16,8 @@ main {
   gap: 1rem
 }
 
-.map-container {
-  flex: 1 1 60%;
-  height: 100%;
-}
-
-.leaflet-container {
-  height: 100%;
+@media (min-width: 1100px) {
+  main {
+    flex-direction: row;
+  }
 }

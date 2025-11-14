@@ -2,8 +2,8 @@ import { McpServer, ResourceTemplate } from '@modelcontextprotocol/sdk/server/mc
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import express from 'express';
 import { z } from 'zod';
-import queryOverpass from './utils/overpass';
-import { EmbeddingResult, findSimilarEmbeddings, getBoundingBox } from './utils/duckdb';
+import queryOverpass from '../utils/overpass';
+import { EmbeddingResult, findSimilarEmbeddings, getBoundingBox } from '../utils/duckdb';
 
 interface FeatureWithEmbeddings {
   name: string;
@@ -73,7 +73,31 @@ SUPPORTED OSM TAGS (examples):
 
 You can combine name and tags for more specific searches. The tool searches nodes, ways, and relations to find both point locations and area features.
 
-Returns OSM elements with their coordinates and similar imagery chip embeddings from the DuckDB database. For each OSM feature, the tool finds similar imagery chips using cosine similarity search, which helps discover imagery that visually matches the feature type (e.g., finding imagery that looks like marinas, parking lots, etc.). Each embedding represents a 160x160 meter area and includes a chips_id that can be used to fetch thumbnail images.`,
+Returns OSM elements with their coordinates and similar imagery chip embeddings from the DuckDB database. For each OSM feature, the tool finds similar imagery chips using cosine similarity search, which helps discover imagery that visually matches the feature type (e.g., finding imagery that looks like marinas, parking lots, etc.). Each embedding represents a 160x160 meter area and includes a chips_id that can be used to fetch thumbnail images.
+
+Please output your response in nicely formatted markdown.
+
+# Example Response
+
+## Feature 1
+- Name: Golden Gate Bridge
+- Coordinates: 37.819928, -122.479659
+- Similar Embeddings:
+  - Chips ID: 1234567890
+    - Similarity: 0.95
+    - Geometry: Point(37.819928, -122.479659)
+    - Timestamp: 2021-01-01 12:00:00
+  - Chips ID: 1234567891
+    - Similarity: 0.90
+    - Geometry: Point(37.819928, -122.479659)
+    - Timestamp: 2021-01-01 12:00:00
+  - Chips ID: 1234567892
+    - Similarity: 0.85
+    - Geometry: Point(37.819928, -122.479659)
+    - Timestamp: 2021-01-01 12:00:00
+  - Chips ID: 1234567893
+`,
+
       inputSchema: {
         name: z.string().optional().describe('Search by place name (case-insensitive regex match)'),
         tags: z.record(
@@ -124,6 +148,8 @@ Returns OSM elements with their coordinates and similar imagery chip embeddings 
         const output = {
           features: featuresWithEmbeddings
         }
+
+        console.log('Output:', output);
         
         return {
           content: [{ type: 'text', text: JSON.stringify(output) }],
@@ -158,7 +184,7 @@ app.post('/mcp', async (req, res) => {
     await transport.handleRequest(req, res, req.body);
 });
 
-const port = parseInt(process.env.PORT || '3000');
+const port = parseInt(process.env.PORT || '3001');
 app.listen(port, () => {
     console.log(`Demo MCP Server running on http://localhost:${port}/mcp`);
 }).on('error', error => {

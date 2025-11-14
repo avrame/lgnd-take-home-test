@@ -8,14 +8,18 @@
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "start:mcp": "tsx watch servers/mcp-server/index.ts"
+    "start:mcp": "tsx watch servers/mcp-server/index.ts",
+    "start:api": "tsx watch servers/api-server/index.ts"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.69.0",
     "@duckdb/node-api": "^1.4.2-r.1",
     "@modelcontextprotocol/sdk": "^1.21.1",
     "axios": "^1.13.2",
+    "dotenv": "^17.2.3",
     "express": "^5.1.0",
     "leaflet": "^1.9.4",
+    "marked": "^17.0.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "react-leaflet": "^5.0.0-rc.2",
@@ -29,6 +33,7 @@
     "@types/react": "^19.2.2",
     "@types/react-dom": "^19.2.2",
     "@vitejs/plugin-react-swc": "^4.2.1",
+    "concurrently": "^9.2.1",
     "eslint": "^9.39.1",
     "eslint-plugin-react-hooks": "^7.0.1",
     "eslint-plugin-react-refresh": "^0.4.24",
