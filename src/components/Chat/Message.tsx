@@ -9,7 +9,10 @@ export default function Message({ message }: { message: MessageData }) {
   const { role, content, date } = message;
   return (
     <article className={`message ${role}`}>
-      <header>{role}</header>
+      <header>
+        <span>{role === 'user' ? '🧑‍💻' : '🤖'}</span>&nbsp;
+        {role}
+      </header>
       <section dangerouslySetInnerHTML={{ __html: content }} />
       <footer>{date.toLocaleString()}</footer>
     </article>
