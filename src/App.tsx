@@ -6,12 +6,8 @@ function App() {
 
   return (
     <main>
-      <div className="chat-container">
-        <Chat />
-      </div>
-      <div className="map-container">
-        <Map />
-      </div>
+      <Chat />
+      <Map />
     </main>
   )
 }

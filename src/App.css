@@ -3,7 +3,7 @@
   height: 100vh;
   max-width: 1600px;
   margin: 0 auto;
-  background-color: #333;
+  background-color: #EEE;
 }
 
 main {
@@ -12,21 +12,12 @@ main {
   width: 100%;
   padding: 1rem;
   box-sizing: border-box;
-  gap: calc(1rem - 10px);
-}
-
-.chat-container {
-  flex: 0 1 40%;
-  min-width: 400px;
-  max-width: 600px;
-  height: 100%;
-  background-color: green;
+  gap: 1rem
 }
 
 .map-container {
   flex: 1 1 60%;
   height: 100%;
-  background-color: blue;
 }
 
 .leaflet-container {

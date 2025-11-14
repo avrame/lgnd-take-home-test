@@ -8,6 +8,7 @@ const sanFranciscoCenter = sanFranciscoBounds.getCenter();
 
 export default function Map() {
   return (
+    <div className="map-container">
     <div className="leaflet-container">
       <MapContainer center={sanFranciscoCenter} bounds={sanFranciscoBounds} scrollWheelZoom={false}>
         <TileLayer
@@ -22,6 +23,7 @@ export default function Map() {
           fillOpacity={0.1}
         />
       </MapContainer>
+    </div>
     </div>
   )
 }
