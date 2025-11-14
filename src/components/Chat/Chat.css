@@ -40,11 +40,19 @@
         border-radius: 0.25rem;
       }
 
+      &.assistant > header {
+        color: #474;
+      }
+
       & > section {
         font-size: 1rem;
         padding: 0.25rem 0.5rem;
-        background-color: #BBDDFF;
+        background-color: #c0eae6;
         border-radius: 0.25rem;
+      }
+
+      &.assistant > section {
+        background-color: #c8e6c9;
       }
 
       & > footer {
