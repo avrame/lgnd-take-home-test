@@ -47,7 +47,7 @@ export default function Chat() {
 
   return (
     <section className="chat-container">
-      <header><h2>Chat with your LLM</h2></header>
+      <header><h2>Chat with your AI map assistant</h2></header>
       <section className="messages">
         {messages.toReversed().map((message) => (
           <Message key={message.id} message={message} />

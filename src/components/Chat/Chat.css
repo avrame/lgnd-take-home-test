@@ -1,3 +1,18 @@
+:root {
+  --chat-header-brightness: 50%;
+  --chat-header-saturation: 0.09;
+  --chat-header-hue: 200deg;
+
+  --message-header-brightness: 50%;
+  --message-section-brightness: 90%;
+  
+  --message-header-saturation: 0.5;
+  --message-section-saturation: 0.04;
+
+  --user-message-hue: 270deg;
+  --assistant-message-hue: 170deg;
+}
+
 .chat-container {
   display: flex;
   flex-direction: column;
@@ -8,7 +23,7 @@
   & > header {
     padding: 0.5rem;
     color: #fff;
-    background-color: #559;
+    background-color: oklch(var(--chat-header-brightness) var(--chat-header-saturation) var(--chat-header-hue));
     border-radius: 0.25rem;
 
     h2 {
@@ -35,24 +50,24 @@
       & > header {
         font-weight: bold;
         font-size: 1rem;
-        color: #44C;
+        color: oklch(var(--message-header-brightness) var(--message-header-saturation) var(--user-message-hue));
         padding: 0 0.5rem;
         border-radius: 0.25rem;
       }
 
       &.assistant > header {
-        color: #474;
+        color: oklch(var(--message-header-brightness) var(--message-header-saturation) var(--assistant-message-hue));
       }
 
       & > section {
         font-size: 1rem;
         padding: 0.25rem 0.5rem;
-        background-color: #c0eae6;
+        background-color: oklch(var(--message-section-brightness) var(--message-section-saturation) var(--user-message-hue));
         border-radius: 0.25rem;
       }
 
       &.assistant > section {
-        background-color: #c8e6c9;
+        background-color: oklch(var(--message-section-brightness) var(--message-section-saturation) 170);
       }
 
       & > footer {
