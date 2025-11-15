@@ -12,6 +12,20 @@
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+
+  /* Brand colors */
+  --brand-brightness: 55%;
+  --brand-saturation: 0.125;
+  --brand-primary-hue: 260deg;
+
+  --message-header-brightness: 50%;
+  --message-section-brightness: 90%;
+  
+  --message-header-saturation: 0.5;
+  --message-section-saturation: 0.04;
+
+  --user-message-hue: 270deg;
+  --assistant-message-hue: 170deg;
 }
 
 a {
@@ -37,33 +51,20 @@ h1 {
 }
 
 button {
-  border-radius: 8px;
-  border: 1px solid transparent;
+  border-radius: 0.5rem;
+  border: none;
   padding: 0.6em 1.2em;
   font-size: 1em;
   font-weight: 500;
   font-family: inherit;
-  background-color: #1a1a1a;
   cursor: pointer;
-  transition: border-color 0.25s;
-}
-button:hover {
-  border-color: #646cff;
-}
-button:focus,
-button:focus-visible {
-  outline: 4px auto -webkit-focus-ring-color;
-}
+  transition: background-color 0.25s;
+  background-color: oklch(var(--brand-brightness) var(--brand-saturation) var(--brand-primary-hue));
 
-@media (prefers-color-scheme: light) {
-  :root {
-    color: #213547;
-    background-color: #ffffff;
+  &:hover {
+    background-color: oklch(calc(var(--brand-brightness) - 5%) var(--brand-saturation) var(--brand-primary-hue));
   }
-  a:hover {
-    color: #747bff;
-  }
-  button {
-    background-color: #f9f9f9;
+  &:active {
+    background-color: oklch(calc(var(--brand-brightness) - 10%) var(--brand-saturation) var(--brand-primary-hue));
   }
 }
