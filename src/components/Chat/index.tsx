@@ -1,11 +1,22 @@
 import { useRef, useState } from 'react';
 import './Chat.css';
 import Message, { type MessageData } from './Message';
+import useWebSocket from 'react-use-websocket';
 import { marked } from 'marked';
 
 export default function Chat() {
   const inputMessageRef = useRef<HTMLInputElement>(null);
   const [messages, setMessages] = useState<MessageData[]>([]);
+  const { sendJsonMessage } = useWebSocket('ws://localhost:3000/api/chat', {
+    onOpen: () => {
+      console.log('WebSocket connection established');
+    },
+    onMessage: async (event) => {
+      const data = JSON.parse(event.data);
+      addMessage('assistant', await marked.parse(data.response));
+    },
+    shouldReconnect: (_closeEvent: CloseEvent) => true,
+  })
 
   const addMessage = (role: 'user' | 'assistant', content: string) => {
     setMessages(prevMessages => [
@@ -19,7 +30,7 @@ export default function Chat() {
     ]);
   }
   
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmitMessage = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const formData = new FormData(e.target as HTMLFormElement);
     const userMessage = formData.get('user-message') as string;
@@ -31,18 +42,7 @@ export default function Chat() {
     // Add user message to messages section
     addMessage('user', userMessage);
 
-    // Call the API to search for map features
-    const response = await fetch('http://localhost:3000/api/chat/search_map_features', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ query: userMessage }),
-    });
-    const json = await response.json();
-    console.log('API response:', json);
-    
-    addMessage('assistant', await marked.parse(json.response.text));
+    sendJsonMessage({ query: userMessage });
   }
 
   return (
@@ -54,7 +54,7 @@ export default function Chat() {
         ))}
       </section>
       <footer>
-        <form onSubmit={handleSubmit}>
+        <form onSubmit={handleSubmitMessage}>
           <div className="message-input">
             <input ref={inputMessageRef} type="text" name="user-message" placeholder="Message" />
             <button type="submit">Send</button>

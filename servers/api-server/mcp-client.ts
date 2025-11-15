@@ -14,12 +14,14 @@ if (!ANTHROPIC_API_KEY) {
 export default class MCPClient {
   private mcp: Client;
   private anthropic: Anthropic;
+  private model: string;
   private transport: StreamableHTTPClientTransport | null = null;
   public tools: ToolUnion[] = [];
   private messages: MessageParam[] = [];
 
   constructor() {
     this.anthropic = new Anthropic({ apiKey: ANTHROPIC_API_KEY });
+    this.model = 'claude-haiku-4-5-20251001';
     this.mcp = new Client({
       name: 'mcp-client',
       version: '1.0.0',
@@ -45,7 +47,7 @@ export default class MCPClient {
     }
   }
 
-  async processQuery(query: string) {
+  async processQuery(query: string, ws: any) {
     this.messages.push(
       {
         role: 'user',
@@ -55,17 +57,18 @@ export default class MCPClient {
 
     const response = await this.anthropic.messages.create({
       max_tokens: 1000,
-      model: 'claude-haiku-4-5-20251001',
+      model: this.model,
       messages: this.messages,
       tools: this.tools,
     });
 
-    const finalText: string[] = [];
-    let structuredContent: any = null;
-
     for (const content of response.content) {
       if (content.type === "text") {
-        finalText.push(content.text);
+        this.messages.push({
+          role: "assistant",
+          content: content.text,
+        });
+        ws.send(JSON.stringify({ response: content.text, structuredContent: null }));
       } else if (content.type === 'tool_use') {
         const toolName = content.name;
         const toolArgs = content.input as { [x: string]: unknown } | undefined;
@@ -74,7 +77,6 @@ export default class MCPClient {
           name: toolName,
           arguments: toolArgs,
         });
-        structuredContent = result.structuredContent;
         console.log('Calling tool', toolName, 'with args', toolArgs);
 
         this.messages.push({
@@ -83,22 +85,23 @@ export default class MCPClient {
         });
 
         const response = await this.anthropic.messages.create({
-          model: "claude-sonnet-4-20250514",
+          model: this.model,
           max_tokens: 1000,
           messages: this.messages,
         });
 
-        finalText.push(
-          response.content[0].type === "text" ? response.content[0].text : ""
-        );
+        this.messages.push({
+          role: "assistant",
+          content: response.content[0].type === "text" ? response.content[0].text : "",
+        });
+
+        ws.send(JSON.stringify({
+          response: response.content[0].type === "text" ? response.content[0].text : "",
+          structuredContent: result.structuredContent,
+        }));
+
+        console.log('this.messages:', this.messages);
       }
-    }
-
-    console.log('structuredContent:', structuredContent);
-
-    return {
-      text: finalText.join("\n"),
-      structuredContent,
     }
   }
 }
