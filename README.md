@@ -12,3 +12,7 @@
 - download the DuckDB embeddings database file: `aws s3 cp --no-sign-request s3://lgnd-fullstack-takehome/embeddings.db .`
 
 ## Running
+- start the MCP server: `npm run start:mcp`
+- open a 2nd terminal and start the API server: `npm run start:api`
+- open a 3rd terminal and start the Vite server: `npm run dev`
+- open `http://localhost:5173/` in your browser to load the app
