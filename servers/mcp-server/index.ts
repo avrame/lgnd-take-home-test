@@ -127,27 +127,23 @@ Please output your response in nicely formatted markdown.
         const bbox = await getSFBoundingBox();
         
         // Query Overpass API for OSM features
-        const features = await queryOverpass({
+        const osmFeatures = await queryOverpass({
           name,
           tags,
           bbox,
         });
 
-        const featuresWithEmbeddings: FeatureWithEmbeddings[] = [];
+        const duckDbCallPromises = osmFeatures.map(feature => findSimilarEmbeddings(feature.lon, feature.lat));
+        const embeddings = await Promise.all(duckDbCallPromises);
 
-        for (const feature of features) {
-          const embeddings = await findSimilarEmbeddings(feature.lon, feature.lat);
-          featuresWithEmbeddings.push({
-            name: feature?.tags?.name || '',
-            lon: feature?.lon || 0,
-            lat: feature?.lat || 0,
-            similarEmbeddings: embeddings
-          });
-        }
+        const features = osmFeatures.map((feature, index) => ({
+          name: feature?.tags?.name || '',
+          lon: feature?.lon || 0,
+          lat: feature?.lat || 0,
+          similarEmbeddings: embeddings[index]
+        }));
 
-        const output = {
-          features: featuresWithEmbeddings
-        }
+        const output = { features }
 
         console.log('Output:', output);
         
