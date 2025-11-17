@@ -4,7 +4,7 @@ import Message, { type MessageData } from './Message';
 import useWebSocket from 'react-use-websocket';
 import { marked } from 'marked';
 
-export default function Chat() {
+export default function Chat({ handleStructuredContent }: { handleStructuredContent: (structuredContent: any) => void }) {
   const inputMessageRef = useRef<HTMLInputElement>(null);
   const [messages, setMessages] = useState<MessageData[]>([]);
   const { sendJsonMessage } = useWebSocket('ws://localhost:3000/api/chat', {
@@ -14,6 +14,7 @@ export default function Chat() {
     onMessage: async (event) => {
       const data = JSON.parse(event.data);
       addMessage('assistant', await marked.parse(data.response));
+      handleStructuredContent(data.structuredContent);
     },
     shouldReconnect: (_closeEvent: CloseEvent) => true,
   })

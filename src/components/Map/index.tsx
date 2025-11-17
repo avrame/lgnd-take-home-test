@@ -7,24 +7,26 @@ const seCorner = L.latLng(37.031979877829684, -121.56504250845597)
 const sanFranciscoBounds = L.latLngBounds(nwCorner, seCorner);
 const sanFranciscoCenter = sanFranciscoBounds.getCenter();
 
-export default function Map() {
+export default function Map({ structuredContent }: { structuredContent: any }) {
+  console.log('structuredContent', structuredContent);
+
   return (
     <div className="map-container">
-    <div className="leaflet-container">
-      <MapContainer center={sanFranciscoCenter} bounds={sanFranciscoBounds} scrollWheelZoom={false}>
-        <TileLayer
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-        />
-        <Rectangle
-          bounds={sanFranciscoBounds}
-          color="blue"
-          weight={2}
-          opacity={0.5}
-          fillOpacity={0.1}
-        />
-      </MapContainer>
-    </div>
+      <div className="leaflet-container">
+        <MapContainer center={sanFranciscoCenter} bounds={sanFranciscoBounds} scrollWheelZoom={false}>
+          <TileLayer
+            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          />
+          <Rectangle
+            bounds={sanFranciscoBounds}
+            color="blue"
+            weight={2}
+            opacity={0.5}
+            fillOpacity={0.1}
+          />
+        </MapContainer>
+      </div>
     </div>
   )
 }
