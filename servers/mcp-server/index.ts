@@ -3,14 +3,7 @@ import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/
 import express from 'express';
 import { z } from 'zod';
 import queryOverpass from '../utils/overpass';
-import { EmbeddingResult, findSimilarEmbeddings, getBoundingBox } from '../utils/duckdb';
-
-interface FeatureWithEmbeddings {
-  name: string;
-  lon: number;
-  lat: number;
-  similarEmbeddings: EmbeddingResult[];
-}
+import { EmbeddingResult, findSimilarEmbeddingsBatch, getBoundingBox } from '../utils/duckdb';
 
 // San Francisco bounding box [south, west, north, east]
 // Fallback bounding box - expanded to cover greater SF area including bay
@@ -133,17 +126,36 @@ Please output your response in nicely formatted markdown.
           bbox,
         });
 
-        const duckDbCallPromises = osmFeatures.map(feature => findSimilarEmbeddings(feature.lon, feature.lat));
-        const embeddings = await Promise.all(duckDbCallPromises);
-
         const features = osmFeatures.map((feature, index) => ({
-          name: feature?.tags?.name || '',
-          lon: feature?.lon || 0,
-          lat: feature?.lat || 0,
-          similarEmbeddings: embeddings[index]
+            feature_index: index,
+            lon: feature?.lon || 0,
+            lat: feature?.lat || 0,
         }));
 
-        const output = { features }
+        const allEmbeddings = await findSimilarEmbeddingsBatch(features);
+
+        // Group embeddings by feature_index
+        const embeddingsByFeature = new Map<number, EmbeddingResult[]>();
+        allEmbeddings.forEach(emb => {
+            if (!embeddingsByFeature.has(emb.feature_index)) {
+                embeddingsByFeature.set(emb.feature_index, []);
+            }
+            embeddingsByFeature.get(emb.feature_index)!.push({
+                chips_id: emb.chips_id,
+                similarity: emb.similarity,
+                geom_wkt: emb.geom_wkt,
+                datetime: emb.datetime,
+            });
+        });
+
+        const featuresWithEmbeddings = osmFeatures.map((feature, index) => ({
+            name: feature?.tags?.name || '',
+            lon: feature?.lon || 0,
+            lat: feature?.lat || 0,
+            similarEmbeddings: embeddingsByFeature.get(index) || []
+        }));
+
+        const output = { features: featuresWithEmbeddings }
 
         console.log('Output:', output);
         

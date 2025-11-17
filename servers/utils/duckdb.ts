@@ -111,52 +111,85 @@ export async function getBoundingBox(): Promise<[number, number, number, number]
     }
 }
 
-/**
- * Find embeddings that intersect with a point, then find similar embeddings
- * @param lon - Longitude (x coordinate)
- * @param lat - Latitude (y coordinate)
- * @param similarLimit - Number of similar embeddings to return (default: 5)
- * @returns Array of embedding results with similarity scores
- */
-export async function findSimilarEmbeddings(
-    lon: number,
-    lat: number,
-    similarLimit: number = 5
-): Promise<EmbeddingResult[]> {
-    const conn = await getConnection();
+export interface FeaturePoint {
+    feature_index: number;
+    lon: number;
+    lat: number;
+}
 
-    console.log('Finding similar embeddings at point:', lon, lat, similarLimit);
+/**
+ * Find similar embeddings for multiple features using parallel queries
+ * Uses multiple connections from the same DuckDB instance for true parallelism
+ * @param features - Array of feature points with indices
+ * @param similarLimit - Number of similar embeddings to return per feature (default: 5)
+ * @returns Array of embedding results with feature_index
+ */
+export async function findSimilarEmbeddingsBatch(
+    features: Array<{ feature_index: number; lon: number; lat: number }>,
+    similarLimit: number = 5
+): Promise<Array<{ feature_index: number } & EmbeddingResult>> {
+    if (features.length === 0) {
+        return [];
+    }
+
+    console.log(`Finding similar embeddings for ${features.length} features in parallel`);
+
+    // Create all connections upfront from the same instance
+    const connections = await Promise.all(
+        features.map(() => getConnection())
+    );
 
     try {
-        // Based on the example query from the take-home test
-        // Use parameterized query for safety
-        const query = `
-            WITH search_embedding AS (
-                SELECT chips_id as search_chip_id, vec
-                FROM embeddings
-                WHERE ST_Contains(geom, ST_Point(?, ?))
-                LIMIT 1
-            )
-            SELECT
-                e.chips_id,
-                array_cosine_similarity(e.vec, se.vec) as similarity,
-                e.geom_wkt,
-                e.datetime
-            FROM embeddings e
-            CROSS JOIN search_embedding se
-            WHERE e.chips_id != se.search_chip_id
-            ORDER BY similarity DESC
-            LIMIT ?
-        `;
+        // Execute all queries in parallel
+        const promises = features.map(async (feature, index) => {
+            const conn = connections[index];
+            const query = `
+                WITH search_embedding AS (
+                    SELECT chips_id as search_chip_id, vec
+                    FROM embeddings
+                    WHERE ST_Contains(geom, ST_Point(?, ?))
+                    LIMIT 1
+                )
+                SELECT
+                    ? as feature_index,
+                    e.chips_id,
+                    array_cosine_similarity(e.vec, se.vec) as similarity,
+                    e.geom_wkt,
+                    e.datetime
+                FROM embeddings e
+                CROSS JOIN search_embedding se
+                WHERE e.chips_id != se.search_chip_id
+                ORDER BY similarity DESC
+                LIMIT ?
+            `;
 
-        const reader = await conn.runAndReadAll(query, [lon, lat, similarLimit]);
-        await reader.readAll();
+            const reader = await conn.runAndReadAll(query, [
+                feature.lon,
+                feature.lat,
+                feature.feature_index,
+                similarLimit
+            ]);
+            await reader.readAll();
+            
+            return reader.getRowObjectsJS() as unknown as Array<{ feature_index: number } & EmbeddingResult>;
+        });
+
+        const results = await Promise.all(promises);
         
-        return reader.getRowObjectsJS() as unknown as EmbeddingResult[];
+        // Close all connections
+        connections.forEach(conn => conn.closeSync());
+        
+        return results.flat();
     } catch (error) {
-        console.error('Error finding similar embeddings:', error);
+        console.error('Error finding similar embeddings in batch:', error);
+        // Ensure all connections are closed even on error
+        connections.forEach(conn => {
+            try {
+                conn.closeSync();
+            } catch (e) {
+                // Ignore errors during cleanup
+            }
+        });
         return [];
-    } finally {
-        conn.closeSync();
     }
 }
