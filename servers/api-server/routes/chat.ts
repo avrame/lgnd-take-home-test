@@ -53,7 +53,7 @@ export const chatWebSocketHandler = (ws: any) => {
     } catch (error) {
       console.error('Chat query error:', error);
       ws.send(JSON.stringify({
-        error: error instanceof Error ? error.message : String(error),
+        error,
       }));
     }
   });

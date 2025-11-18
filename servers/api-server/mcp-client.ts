@@ -62,12 +62,13 @@ export default class MCPClient {
       tools: this.tools,
     });
 
+    this.messages.push({
+      role: "assistant",
+      content: response.content,
+    });
+
     for (const content of response.content) {
       if (content.type === "text") {
-        this.messages.push({
-          role: "assistant",
-          content: content.text,
-        });
         ws.send(JSON.stringify({ response: content.text, structuredContent: null }));
       } else if (content.type === 'tool_use') {
         const toolName = content.name;
@@ -81,7 +82,13 @@ export default class MCPClient {
 
         this.messages.push({
           role: "user",
-          content: result.content as string,
+          content: [
+            {
+              type: "tool_result",
+              tool_use_id: content.id,
+              content: result.content as string,
+            }
+          ],
         });
 
         const response = await this.anthropic.messages.create({

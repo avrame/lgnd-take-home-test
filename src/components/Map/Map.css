@@ -6,3 +6,13 @@
 .leaflet-container {
   height: 100%;
 }
+
+.leaflet-popup-content {
+  overflow-y: visible;
+}
+
+.similar-embeddings {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}

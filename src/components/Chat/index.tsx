@@ -13,6 +13,10 @@ export default function Chat({ handleStructuredContent }: { handleStructuredCont
     },
     onMessage: async (event) => {
       const data = JSON.parse(event.data);
+      console.log('Data:', data);
+      if (data.error) {
+        console.error('Error:', data.error);
+      }
       addMessage('assistant', await marked.parse(data.response));
       handleStructuredContent(data.structuredContent);
     },
