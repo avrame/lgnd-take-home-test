@@ -126,7 +126,7 @@ export interface FeaturePoint {
  */
 export async function findSimilarEmbeddingsBatch(
     features: Array<{ feature_index: number; lon: number; lat: number }>,
-    similarLimit: number = 5
+    similarLimit: number = 6
 ): Promise<Array<{ feature_index: number } & EmbeddingResult>> {
     if (features.length === 0) {
         return [];

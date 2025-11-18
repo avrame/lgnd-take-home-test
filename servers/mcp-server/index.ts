@@ -110,7 +110,7 @@ Please output your response in nicely formatted markdown.
               similarity: z.number().describe('Cosine similarity score (0-1, higher is more similar)'),
               geom_wkt: z.string().describe('Geometry in Well-Known Text format'),
               datetime: z.string().describe('Timestamp when the imagery was captured'),
-            })).max(5).describe('The top 5 most similar embeddings from the DuckDB database')
+            })).describe('The most similar embeddings from the DuckDB database')
           })).describe('The features found in the San Francisco area')
         }
     },

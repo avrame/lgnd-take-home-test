@@ -55,7 +55,7 @@ export default class MCPClient {
       },
     );
 
-    const response = await this.anthropic.messages.create({
+    const query_response = await this.anthropic.messages.create({
       max_tokens: 1000,
       model: this.model,
       messages: this.messages,
@@ -64,10 +64,12 @@ export default class MCPClient {
 
     this.messages.push({
       role: "assistant",
-      content: response.content,
+      content: query_response.content,
     });
 
-    for (const content of response.content) {
+    let structuredContent: any[] = [];
+
+    for (const content of query_response.content) {
       if (content.type === "text") {
         ws.send(JSON.stringify({ response: content.text, structuredContent: null }));
       } else if (content.type === 'tool_use') {
@@ -79,6 +81,8 @@ export default class MCPClient {
           arguments: toolArgs,
         });
         console.log('Calling tool', toolName, 'with args', toolArgs);
+        console.log('result:', JSON.stringify(result, null, 2));
+        structuredContent = structuredContent.concat((result.structuredContent as any).features);
 
         this.messages.push({
           role: "user",
@@ -90,25 +94,28 @@ export default class MCPClient {
             }
           ],
         });
-
-        const response = await this.anthropic.messages.create({
-          model: this.model,
-          max_tokens: 1000,
-          messages: this.messages,
-        });
-
-        this.messages.push({
-          role: "assistant",
-          content: response.content[0].type === "text" ? response.content[0].text : "",
-        });
-
-        ws.send(JSON.stringify({
-          response: response.content[0].type === "text" ? response.content[0].text : "",
-          structuredContent: result.structuredContent,
-        }));
-
-        console.log('this.messages:', this.messages);
+        console.log('this.messages:', JSON.stringify(this.messages, null, 2));
       }
     }
+
+    const tool_use_response = await this.anthropic.messages.create({
+      model: this.model,
+      max_tokens: 1000,
+      messages: this.messages,
+    });
+
+    console.log('response.content after tool use:', JSON.stringify(tool_use_response.content, null, 2));
+
+    this.messages.push({
+      role: "assistant",
+      content: tool_use_response.content[0].type === "text" ? tool_use_response.content[0].text : "",
+    });
+
+    console.log('this.messages after tool use:', JSON.stringify(this.messages, null, 2));
+
+    ws.send(JSON.stringify({
+      response: tool_use_response.content[0].type === "text" ? tool_use_response.content[0].text : "",
+      structuredContent,
+    }));
   }
 }

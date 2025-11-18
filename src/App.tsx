@@ -13,7 +13,7 @@ function App() {
   return (
     <main>
       <Chat handleStructuredContent={handleStructuredContent} />
-      <Map features={structuredContent?.features || []} />
+      <Map features={structuredContent || []} />
     </main>
   )
 }
